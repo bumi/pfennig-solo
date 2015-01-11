@@ -1,0 +1,46 @@
+{
+    "app_name": "pfennig-solo",
+    "services": [
+        {
+            "service_name": "pfennig-service",
+            "components": [
+                {
+                    "component_name": "database",
+                    "image": "postgres",
+                    "ports": [
+                        "5432"
+                    ],
+                    "env": [
+                    ]
+                },
+                {
+                    "component_name": "pfennig-component",
+                    "image": "registry.giantswarm.io/bumi/pfennig-solo",
+                    "ports": [
+                        "4567"
+                    ],
+                    "env": [
+                        "WALLET_PATH=/var/data/pfennig",
+                        "DATABASE_DDL_RUN=1",
+                        "DATABASE_PORT_5432_USER=postgres",
+                    ],
+                    "dependencies": [
+                        {
+                            "name": "database",
+                            "port": 5432
+                        }
+                    ],
+                    "volumes": [
+                        {
+                            "path": "/var/data/pfennig",
+                            "size": "6 GB"
+                        }
+                    ],
+                    "domains": {
+                        "pfennig.gigantic.io": "4567"
+                    }
+                }
+            ]
+        }
+    ]
+}

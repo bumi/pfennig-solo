@@ -1,0 +1,1 @@
+web: java -jar target/pfennig-jar-with-dependencies.jar

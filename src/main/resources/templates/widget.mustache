@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Pay</title>
+    <script src="/assets/qrcode.min.js"></script>
+    <script src="/assets/jquery.min.js"></script>
+
+  </head>
+  <body>
+    <div>{{description}}</div>
+    <div>{{price_in_btc}}</div>
+    <div>{{address_hash}}</div>
+    <a href="bitcoin:{{address_hash}}?label={{label}}&amount{{price_in_btc}}&message={{description}}">{{address_hash}}</a>
+    <div id="bitcoin-qrcode"></div>
+
+    <script type="text/javascript">
+        window.paidCheck = window.setInterval(function() {
+            $.ajax({
+                type: 'GET', 
+                url: '/status/{{identifier}}',
+                dataType: 'json',
+                success: function(data) { 
+                    console.log(data);
+                    
+                }
+            });  
+        }, 1000);
+    </script>
+  
+  </body>
+</html>
+
