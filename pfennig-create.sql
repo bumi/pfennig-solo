@@ -1,14 +1,3 @@
-create table accounts (
-  id                        integer not null,
-  token                     varchar(255),
-  name                      varchar(255),
-  email                     varchar(255),
-  watching_key              varchar(255),
-  constraint uq_accounts_token unique (token),
-  constraint uq_accounts_email unique (email),
-  constraint pk_accounts primary key (id))
-;
-
 create table invoices (
   id                        integer not null,
   price                     bigint,
@@ -17,7 +6,6 @@ create table invoices (
   currency                  varchar(255),
   notification_url          varchar(255),
   order_id                  varchar(255),
-  redirect_url              varchar(255),
   description               varchar(255),
   identifier                varchar(255),
   paid_at                   timestamp,
@@ -44,8 +32,6 @@ create table watching_addresses (
   paid_at                   timestamp,
   constraint pk_watching_addresses primary key (id))
 ;
-
-create sequence accounts_seq;
 
 create sequence invoices_seq;
 

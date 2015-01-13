@@ -35,7 +35,7 @@ public class Treasury {
     public Wallet wallet;
     private File chainFile;
     private SPVBlockStore chainStore;
-    private BlockChain blockChain;
+    public BlockChain blockChain;
     private PeerGroup peerGroup;
     public File walletFile;
     static Logger logger = LoggerFactory.getLogger(Treasury.class.getName());
@@ -102,8 +102,8 @@ public class Treasury {
         DeterministicKey key = DeterministicKey.deserializeB58(null, watchingKey);
         this.wallet = Wallet.fromWatchingKey(this.params, key, keyBirthday);
         this.walletFile = walletFile;
-        this.wallet.autosaveToFile(this.walletFile, 300, TimeUnit.MILLISECONDS, null);
         this.wallet.saveToFile(this.walletFile);
+        this.wallet.autosaveToFile(this.walletFile, 300, TimeUnit.MILLISECONDS, null);
         this.wallet.addEventListener(new Treasury.WalletListener(this.params));
         this.blockChain.addWallet(this.wallet);
         this.peerGroup.addWallet(this.wallet);

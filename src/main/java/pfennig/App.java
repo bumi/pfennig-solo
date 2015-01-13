@@ -29,6 +29,7 @@ public class App {
         if (databaseUrl == null) {
             databaseUrl = "postgresql://postgres:@localhost:5432/pfennig";
         }
+        logger.info("connecting to DB: " + databaseUrl);
 
         boolean ddlRun = System.getenv("DATABASE_DDL_RUN") != null && System.getenv("DATABASE_DDL_RUN").equals("1");
         EbeanServer ebeanServer = createEbeanServerFromUrl(databaseUrl, ddlRun);
@@ -41,12 +42,19 @@ public class App {
         if (environment == null) {
             environment = "org.bitcoin.test";
         }
-        logger.info("using environment " + environment);
+        logger.info("using network " + environment);
         
         String walletPath = System.getenv("WALLET_PATH");
         if (walletPath == null) {
             walletPath = "./wallets/main.wallet";
         }
+        logger.info("loading wallet from: " + walletPath);
+
+        String rootDir = System.getenv("ROOT_DIR");
+        if (rootDir == null) {
+            rootDir = "./";
+        }
+        logger.info("using root directory: " + rootDir);
 
         long keyBirthday;
         if (System.getenv("WATCHING_KEY") == null) {
@@ -59,7 +67,7 @@ public class App {
             keyBirthday = new java.util.Date().getTime();
         }
 
-        final Treasury treasury = new Treasury(environment);
+        final Treasury treasury = new Treasury(environment, new File(rootDir));
         treasury.loadWalletFromWatchingKey(watchingKey, new File(walletPath), keyBirthday);
         treasury.start();
 
@@ -73,7 +81,7 @@ public class App {
         });
 
         get("/", (req, res) -> {
-            return "ping " + new java.util.Date().getTime();
+            return "ping BestChainHeight=" + treasury.blockChain.getBestChainHeight() + " time=" + new java.util.Date().getTime();
         });
 
         post("/api/invoices", (req, res) -> {
@@ -129,7 +137,7 @@ public class App {
             }
         });
 
-        get("/price", (req, res) -> {
+        get("/api/price", (req, res) -> {
             String currency = req.queryParams("currency");
             if (currency == null) {
                 currency = "EUR";

@@ -1,6 +1,7 @@
 {
   "bumi/dev": {
-    "POSTGRES_PASSWORD": "your passwd here",
-    "DATABASE_PORT_5432_PASSWORD" : "your passwd here"
+    "pgpassword": "your passwd here",
+    "watching_key" : "wallet watching key",
+    "bitcoin_network": "org.bitcoin.test"
   }
 }

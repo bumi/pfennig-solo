@@ -53,8 +53,6 @@ public class Invoice {
     String notificationUrl;
     @Column(name = "order_id")
     String orderId;
-    @Column(name = "redirect_url")
-    String redirectUrl;
     String description;
 
     @NotNull
@@ -101,13 +99,19 @@ public class Invoice {
 
     public static Invoice fromQueryMap(QueryParamsMap params) {
         Invoice invoice = new Invoice();
+        logger.debug("new invoice with:" + 
+                " notification_url=" + params.get("notification_url").value() + 
+                " description=" + params.get("description").value() +
+                " order_id=" + params.get("order_id").value() +
+                " currency=" + params.get("currency").value() +
+ " price=" + params.get("price").value());
+        
         try {
             invoice.insertPrice(params.get("price").longValue(), params.get("currency").value());
         } catch (NumberFormatException e) {
         }
-
+        
         invoice.setNotificationUrl(params.get("notification_url").value());
-        invoice.setRedirectUrl(params.get("redirect_url").value());
         invoice.setDescription(params.get("description").value());
         invoice.setOrderId(params.get("order_id").value());
         invoice.setLabel(params.get("label").value());
@@ -208,7 +212,6 @@ public class Invoice {
         vars.put("orderId", this.getOrderId());
         vars.put("description", this.getDescription());
         vars.put("address_hash", this.getAddressHash());
-        vars.put("redirect_url", this.getRedirectUrl());
         vars.put("label", "label");
         return vars;
     }
@@ -256,14 +259,6 @@ public class Invoice {
 
     public void setOrderId(String orderId) {
         this.orderId = orderId;
-    }
-
-    public String getRedirectUrl() {
-        return redirectUrl;
-    }
-
-    public void setRedirectUrl(String redirectUrl) {
-        this.redirectUrl = redirectUrl;
     }
 
     public String getDescription() {

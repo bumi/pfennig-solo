@@ -7,6 +7,9 @@ WORKDIR /pfennig
 
 # Prepare by downloading dependencies
 ADD pom.xml /pfennig/pom.xml
+ADD pfennig-create.sql /pfennig/pfennig-create.sql
+ADD pfennig-drop.sql /pfennig/pfennig-drop.sql
+
 RUN ["mvn", "dependency:resolve"]
 RUN ["mvn", "verify"]
 
@@ -18,5 +21,8 @@ RUN mkdir -p /pfennig/wallets
 
 EXPOSE 4567
 
-CMD ['start.sh']
+ADD ./start.sh /pfennig/start.sh
+RUN chmod +x /pfennig/start.sh
+
+CMD ["./start.sh"]
 #CMD ["java", "-jar", "target/pfennig-jar-with-dependencies.jar"]
