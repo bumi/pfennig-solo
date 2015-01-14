@@ -61,18 +61,12 @@ public class Treasury {
 
 
     public void start() throws Exception {
-        if (this.useLocalhost) {
+        if (this.params.getId().equals(NetworkParameters.ID_REGTEST) || this.useLocalhost) {
             InetAddress localhost = InetAddress.getLocalHost();
             PeerAddress localPeer = new PeerAddress(localhost, this.params.getPort());
             this.peerGroup.addAddress(localPeer);
         } else {
             this.peerGroup.addPeerDiscovery(new DnsDiscovery(this.params));
-        }
-
-        if (environment.equals("regtest") || System.getenv("DATABASE_DDL_RUN").equals("CONNECT_TO_LOCALHOST")) {
-            InetAddress localhost = InetAddress.getLocalHost();
-            PeerAddress localPeer = new PeerAddress(localhost, this.params.getPort());
-            this.peerGroup.addAddress(localPeer);
         }
 
         DownloadListener bListener = new DownloadListener() {

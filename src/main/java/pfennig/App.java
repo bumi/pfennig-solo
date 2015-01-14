@@ -44,6 +44,9 @@ public class App {
         }
         logger.info("using network " + environment);
         
+        String localhost = System.getenv("USE_BITCOIND");
+        boolean useLocalhost = localhost != null && localhost.equals("1");
+
         String walletPath = System.getenv("WALLET_PATH");
         if (walletPath == null) {
             walletPath = "./wallets/main.wallet";
@@ -67,7 +70,7 @@ public class App {
             keyBirthday = new java.util.Date().getTime();
         }
 
-        final Treasury treasury = new Treasury(environment, new File(rootDir));
+        final Treasury treasury = new Treasury(environment, new File(rootDir), useLocalhost);
         treasury.loadWalletFromWatchingKey(watchingKey, new File(walletPath), keyBirthday);
         treasury.start();
 
