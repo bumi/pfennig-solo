@@ -7,9 +7,12 @@ Configuration
 Available configuration options:
 
 * `DATABASE_URL`: the database configuration as URL. must be set!
-* `BITCOIN_NETWORK`: main, regtest, testnet (defaults to testnet)
-* `PORT`: the port the application runs on. defaults to the spark default port 4567
-* `ARCHIVE_WALLETS`: if set to "1" the wallet files get moved to the archive folder instead of deleting them. By default the wallet files get deleted.
 * `DATABASE_DDL_RUN`: if set to "1" the database schme (*-drop.sql and *-create.sql) get executed. ATTENTION: this deletes your current data.
+* `BITCOIN_NETWORK`: main, regtest, testnet (defaults to testnet)
+* `USE_BITCOIND`: connect to a bitcoind running on localhost
+* `WALLET_PATH`: path to the wallet file
+* `ROOT_DIR`: root directory. used to store the blockchain data
+* `WATCHING_KEY`: the wallet watching key that should be used to initialize a wallet
+* `PORT`: the port the application runs on. defaults to the spark default port 4567
 
 If you're using Eclipse you can configure these variables in your run configuration (Run -> Run Configuration -> Environment)
