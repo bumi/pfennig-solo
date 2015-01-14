@@ -103,6 +103,7 @@ public class WatchingAddress {
         if (this.notificationUrl == null || this.notificationUrl.trim().isEmpty())
             return true;
 
+        logger.info("sending notification to: " + this.notificationUrl);
         HttpRequest request = HttpRequest.post(this.notificationUrl);
         request.header("Content-Type", "application/json");
         request.send(this.toJson());
