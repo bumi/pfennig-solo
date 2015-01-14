@@ -29,10 +29,13 @@ public class WalletCli {
         if (params == null) {
             throw new Exception("please provide a NETWORK as environment variable: " + NetworkParameters.ID_MAINNET + ", " + NetworkParameters.ID_TESTNET + ", " + NetworkParameters.ID_REGTEST);
         }
+        System.out.println("using " + network);
         try {
             String command = args[0];
             if (command.equals("create")) {
                 createWallet(params, args[1]);
+            } else if (command.equals("show")) {
+                showWallet(params, args[1]);
             } else if (command.equals("send")) {
                 transferFunds(params, args[1], args[2], args[3]);
             } else {
@@ -45,6 +48,24 @@ public class WalletCli {
         }
     }
 
+    public static void showWallet(NetworkParameters params, String file) throws Exception {
+        File walletFile = new File(file);
+        System.out.println("wallet file: " + walletFile.getAbsolutePath());
+        Wallet wallet = Wallet.loadFromFile(walletFile);
+        System.out.println(wallet.toString());
+
+        DeterministicSeed seed = wallet.getKeyChainSeed();
+        System.out.println("Seed words are: " + Joiner.on(" ").join(seed.getMnemonicCode()));
+        System.out.println("Seed birthday is: " + seed.getCreationTimeSeconds());
+
+        DeterministicKey watchingKey = wallet.getWatchingKey();
+
+        System.out.println("Watching key data: " + watchingKey.serializePubB58());
+        System.out.println("Watching key birthday: " + watchingKey.getCreationTimeSeconds());
+        System.out.println("Receive address: " + wallet.currentReceiveAddress().toString());
+        System.out.println("DONE...");
+    }
+    
     public static void transferFunds(NetworkParameters params, String file, String addressHash, String amount) throws Exception {
         Coin value = Coin.parseCoin(amount);
         Address to = new Address(params, addressHash);
@@ -85,15 +106,7 @@ public class WalletCli {
         wallet.saveToFile(walletFile);
         System.out.println("...wallet saved");
 
-        DeterministicSeed seed = wallet.getKeyChainSeed();
-        System.out.println("Seed words are: " + Joiner.on(" ").join(seed.getMnemonicCode()));
-        System.out.println("Seed birthday is: " + seed.getCreationTimeSeconds());
-
-        DeterministicKey watchingKey = wallet.getWatchingKey();
-
-        System.out.println("Watching key data: " + watchingKey.serializePubB58());
-        System.out.println("Watching key birthday: " + watchingKey.getCreationTimeSeconds());
-        System.out.println("DONE...");
+        showWallet(params, file);
     }
 
 }
