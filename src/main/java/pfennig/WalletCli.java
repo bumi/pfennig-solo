@@ -12,7 +12,9 @@ import org.bitcoinj.core.NetworkParameters;
 import org.bitcoinj.core.PeerGroup;
 import org.bitcoinj.core.Wallet;
 import org.bitcoinj.crypto.DeterministicKey;
-import org.bitcoinj.store.SPVBlockStore;
+import org.bitcoinj.net.discovery.DnsDiscovery;
+import org.bitcoinj.store.BlockStore;
+import org.bitcoinj.store.MemoryBlockStore;
 import org.bitcoinj.wallet.DeterministicSeed;
 
 import com.google.common.base.Joiner;
@@ -52,8 +54,35 @@ public class WalletCli {
         File walletFile = new File(file);
         System.out.println("wallet file: " + walletFile.getAbsolutePath());
         Wallet wallet = Wallet.loadFromFile(walletFile);
+
+        BlockStore chainStore = new MemoryBlockStore(params);
+        BlockChain blockChain = new BlockChain(params, chainStore);
+        PeerGroup peerGroup = new PeerGroup(params, blockChain);
+        peerGroup.addPeerDiscovery(new DnsDiscovery(params));
+
+        System.out.println("Do you want to download and replay the blockchain? [y|n]");
+        BufferedReader bufferRead = new BufferedReader(new InputStreamReader(System.in));
+        boolean downloadBlockchain = bufferRead.readLine().toLowerCase().equals("y");
+
+        if (downloadBlockchain) {
+            System.out.println("Downloading the blockchain in memory. Please be patient.");
+
+            blockChain.addWallet(wallet);
+            peerGroup.addWallet(wallet);
+
+            peerGroup.startAsync();
+            peerGroup.awaitRunning();
+            peerGroup.downloadBlockChain();
+        }
+
         System.out.println(wallet.toString());
 
+        System.out.println("--------------------------------------------------------------------------------------");
+        if (downloadBlockchain) {
+            System.out.println("Wallet balance: " + wallet.getBalance().toFriendlyString());
+        } else {
+            System.out.println("Wallet balance: " + wallet.getBalance().toFriendlyString() + " BUT: Blockchain not synced ");
+        }
         DeterministicSeed seed = wallet.getKeyChainSeed();
         System.out.println("Seed words are: " + Joiner.on(" ").join(seed.getMnemonicCode()));
         System.out.println("Seed birthday is: " + seed.getCreationTimeSeconds());
@@ -63,19 +92,20 @@ public class WalletCli {
         System.out.println("Watching key data: " + watchingKey.serializePubB58());
         System.out.println("Watching key birthday: " + watchingKey.getCreationTimeSeconds());
         System.out.println("Receive address: " + wallet.currentReceiveAddress().toString());
+        System.out.println("--------------------------------------------------------------------------------------");
+        if (downloadBlockchain) {
+            wallet.saveToFile(walletFile);
+            peerGroup.stopAsync();
+        }
+
         System.out.println("DONE...");
     }
     
     public static void transferFunds(NetworkParameters params, String file, String addressHash, String amount) throws Exception {
         Coin value = Coin.parseCoin(amount);
         Address to = new Address(params, addressHash);
-        String directory = System.getenv("ROOT_PATH");
-        if (directory == null) {
-            directory = "./";
-        }
-        File chainFile = new File(directory, "pfennig-" + params.getId() + ".spvchain");
 
-        SPVBlockStore chainStore = new SPVBlockStore(params, chainFile);
+        BlockStore chainStore = new MemoryBlockStore(params);
         BlockChain blockChain = new BlockChain(params, chainStore);
         PeerGroup peerGroup = new PeerGroup(params, blockChain);
 
@@ -83,11 +113,11 @@ public class WalletCli {
         Wallet wallet = Wallet.loadFromFile(walletFile);
 
         try {
-            System.out.println("Sending " + value.toFriendlyString() + " BTC to " + to.getHash160());
-            System.out.println("press Y to confirm");
+            System.out.println("Sending " + value.toFriendlyString() + " to " + to.getHash160());
+            System.out.println("press Y to confirm: ");
             BufferedReader bufferRead = new BufferedReader(new InputStreamReader(System.in));
-            String s = bufferRead.readLine();
-            if (s.toLowerCase() == "y") {
+            boolean confirmTransfer = bufferRead.readLine().toLowerCase().equals("y");
+            if (confirmTransfer) {
                 Wallet.SendResult result = wallet.sendCoins(peerGroup, to, value);
                 System.out.println("coins sent. transaction hash: " + result.tx.getHashAsString());
             } else {
