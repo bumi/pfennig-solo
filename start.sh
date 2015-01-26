@@ -6,13 +6,27 @@ cd /pfennig
 
 echo "booting up"
 
-echo "$DATABASE_PORT_5432_TCP_ADDR:$DATABASE_PORT_5432_TCP_PORT:pfennig:$DATABASE_PORT_5432_USER:$DATABASE_PORT_5432_PASSWORD" > "$HOME/.pgpass"
-chmod 0600 "$HOME/.pgpass"
+if [ -n "$DATABASE_PORT_5432_TCP_ADDR" ]; then
+  echo "DATABASE_PORT_5432_TCP_ADDR is set"
+  echo "assuming linking with env variables"
 
-PSQL="psql -h $DATABASE_PORT_5432_TCP_ADDR -p $DATABASE_PORT_5432_TCP_PORT -U $DATABASE_PORT_5432_USER"
+  echo "$DATABASE_PORT_5432_TCP_ADDR:$DATABASE_PORT_5432_TCP_PORT:pfennig:$DATABASE_PORT_5432_USER:$DATABASE_PORT_5432_PASSWORD" > "$HOME/.pgpass"
+  chmod 0600 "$HOME/.pgpass"
+
+  PSQL="psql -h $DATABASE_PORT_5432_TCP_ADDR -p $DATABASE_PORT_5432_TCP_PORT -U $DATABASE_PORT_5432_USER"
+
+  export DATABASE_URL="postgresql://$DATABASE_PORT_5432_USER:$DATABASE_PORT_5432_PASSWORD@$DATABASE_PORT_5432_TCP_ADDR:$DATABASE_PORT_5432_TCP_PORT/pfennig"
+
+else
+  echo "seems no DATABASE_PORT_5432_TCP_ADDR env var is set."
+  echo "assuming we are running locally using fig"
+  echo "linking is done with host entries connecting to 'db' host"
+
+  PSQL="psql -h db -U postgres"
+  export DATABASE_URL="postgresql://postgres:@db:5432/pfennig"
+fi
 
 echo "preparing DB"
-cat "$HOME/.pgpass"
 
 if [ ! $($PSQL -c '\l'| grep pfennig) ]; then
   echo "creating database"
@@ -20,12 +34,12 @@ if [ ! $($PSQL -c '\l'| grep pfennig) ]; then
 fi
 
 #TODO: some shema migration
+# if no invoices table is there we run the create script
 if [ ! $($PSQL -c '\dt' pfennig | grep invoices) ]; then
   echo "importing schema"
   $PSQL -f pfennig-create.sql pfennig
 fi
 
-export DATABASE_URL="postgresql://$DATABASE_PORT_5432_USER:$DATABASE_PORT_5432_PASSWORD@$DATABASE_PORT_5432_TCP_ADDR:$DATABASE_PORT_5432_TCP_PORT/pfennig"
 echo $DATABASE_URL
 echo "running pfennig"
 java -jar target/pfennig-jar-with-dependencies.jar

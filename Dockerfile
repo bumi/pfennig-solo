@@ -24,5 +24,5 @@ EXPOSE 4567
 ADD ./start.sh /pfennig/start.sh
 RUN chmod +x /pfennig/start.sh
 
-CMD ["./start.sh"]
+CMD ["/pfennig/start.sh"]
 #CMD ["java", "-jar", "target/pfennig-jar-with-dependencies.jar"]
