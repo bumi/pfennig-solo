@@ -1,6 +1,16 @@
 # Pfennig
 
 
+Run using fig
+------------
+
+* have a look at the fig.yml and configure your watching_key
+* run `fig build` to build the services
+* run `fig up` to start 
+* the app will run on your docker host on port 4567
+
+use `boot2docker ip` on OSX to get the docker host
+
 Configuration
 -------------
 
@@ -16,3 +26,6 @@ Available configuration options:
 * `PORT`: the port the application runs on. defaults to the spark default port 4567
 
 If you're using Eclipse you can configure these variables in your run configuration (Run -> Run Configuration -> Environment)
+
+
+
