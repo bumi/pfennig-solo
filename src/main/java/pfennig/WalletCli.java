@@ -96,6 +96,7 @@ public class WalletCli {
         if (downloadBlockchain) {
             wallet.saveToFile(walletFile);
             peerGroup.stopAsync();
+            peerGroup.awaitTerminated();
         }
 
         System.out.println("DONE...");
@@ -105,23 +106,34 @@ public class WalletCli {
         Coin value = Coin.parseCoin(amount);
         Address to = new Address(params, addressHash);
 
-        BlockStore chainStore = new MemoryBlockStore(params);
-        BlockChain blockChain = new BlockChain(params, chainStore);
-        PeerGroup peerGroup = new PeerGroup(params, blockChain);
-
         File walletFile = new File(file);
         Wallet wallet = Wallet.loadFromFile(walletFile);
 
+        BlockStore chainStore = new MemoryBlockStore(params);
+        BlockChain blockChain = new BlockChain(params, chainStore);
+        PeerGroup peerGroup = new PeerGroup(params, blockChain);
+        peerGroup.addPeerDiscovery(new DnsDiscovery(params));
+
+        blockChain.addWallet(wallet);
+        peerGroup.addWallet(wallet);
+
+        peerGroup.startAsync();
+        peerGroup.awaitRunning();
+
         try {
-            System.out.println("Sending " + value.toFriendlyString() + " to " + to.getHash160());
-            System.out.println("press Y to confirm: ");
+            System.out.println("Sending " + value.toFriendlyString() + " to " + to.toString());
+            System.out.println("enter Y to confirm: ");
             BufferedReader bufferRead = new BufferedReader(new InputStreamReader(System.in));
             boolean confirmTransfer = bufferRead.readLine().toLowerCase().equals("y");
             if (confirmTransfer) {
                 Wallet.SendResult result = wallet.sendCoins(peerGroup, to, value);
-                System.out.println("coins sent. transaction hash: " + result.tx.getHashAsString());
+                Thread.sleep(4000); // wait a bit for the transaction to be propagated
+                System.out.println("Coins sent. transaction hash: " + result.tx.getHashAsString());
+                System.out.println("Wallet balance: " + wallet.getBalance().toFriendlyString());
+                peerGroup.stopAsync();
+                peerGroup.awaitTerminated();
             } else {
-                System.out.println("cancel");
+                System.out.println("ok, canceled");
             }
         } catch (InsufficientMoneyException e) {
             System.out.println("Not enough coins in your wallet. Missing " + e.missing.getValue() + " satoshis are missing (including fees)");
