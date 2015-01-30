@@ -179,7 +179,7 @@ public class App {
             price.put("satoshi", satoshi);
             price.put("value", fiat.value);
             price.put(fiat.currencyCode, fiat.toPlainString());
-            price.put("friendly", fiat.toFriendlyString());
+            price.put("btc", fiat.toFriendlyString());
             return price.toJSONString();
         });
     }
