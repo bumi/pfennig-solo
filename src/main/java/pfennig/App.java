@@ -35,6 +35,7 @@ public class App {
         EbeanServer ebeanServer = createEbeanServerFromUrl(databaseUrl, ddlRun);
         Invoice.databaseConnnection = ebeanServer;
         WatchingAddress.databaseConnnection = ebeanServer;
+        Payment.databaseConnnection = ebeanServer;
 
         PriceCalculator.init();
 
@@ -73,6 +74,7 @@ public class App {
         final Treasury treasury = new Treasury(environment, new File(rootDir), useLocalhost);
         treasury.loadWalletFromWatchingKey(watchingKey, new File(walletPath), keyBirthday);
         treasury.start();
+        Treasury.instance = treasury;
 
         String port = System.getenv("PORT");
         if (port != null) {
@@ -84,7 +86,7 @@ public class App {
         });
 
         get("/", (req, res) -> {
-            return "ping BestChainHeight=" + treasury.blockChain.getBestChainHeight() + " time=" + new java.util.Date().getTime();
+            return "ping BestChainHeight=" + treasury.getChainHeight() + " time=" + new java.util.Date().getTime();
         });
 
         post("/api/invoices", (req, res) -> {
@@ -196,6 +198,7 @@ public class App {
 
         config.addClass(Invoice.class);
         config.addClass(WatchingAddress.class);
+        config.addClass(Payment.class);
 
         return EbeanServerFactory.create(config);
     }

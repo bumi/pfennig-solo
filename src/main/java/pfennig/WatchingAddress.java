@@ -1,7 +1,9 @@
 package pfennig;
 
 import java.sql.Timestamp;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import javax.persistence.Column;
@@ -15,7 +17,6 @@ import net.sf.oval.Validator;
 import net.sf.oval.constraint.NotEmpty;
 import net.sf.oval.constraint.NotNull;
 
-import org.bitcoinj.core.Coin;
 import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,14 +51,10 @@ public class WatchingAddress {
     String addressHash;
     @Column(name = "received_satoshi")
     Long receivedSatoshi;
-    @Column(name = "transaction_hash")
-    String transactionHash;
+
     String label;
-    Integer confidence;
-    Integer chainHeight;
+
     Timestamp createdAt;
-    @Column(name = "paid_at")
-    Timestamp paidAt;
 
     @Transient
     List<ConstraintViolation> violations;
@@ -91,14 +88,6 @@ public class WatchingAddress {
         return address;
     }
 
-    public void markAsPaid(String txHash, Timestamp paidAt, Coin coin) {
-        this.setTransactionHash(txHash);
-        this.setPaidAt(paidAt);
-        this.setReceivedSatoshi(coin.value);
-        this.save();
-        this.sendNotification();
-    }
-
     public boolean sendNotification() {
         if (this.notificationUrl == null || this.notificationUrl.trim().isEmpty())
             return true;
@@ -113,15 +102,11 @@ public class WatchingAddress {
             return true;
         } else {
             logger.info("notification failed for watching address " + this.getIdentifier());
+            logger.info("notification response: " + request.body());
             return false;
         }
     }
-    public void markAsConfirmed(Integer confidence, Integer height) {
-        this.setConfidence(confidence);
-        this.setChainHeight(height);
-        this.save();
-        this.sendNotification();
-    }
+
     public boolean save() {
         if (this.identifier == null)
             this.identifier = UUID.randomUUID().toString();
@@ -146,13 +131,21 @@ public class WatchingAddress {
         addressJson.put("address_hash", this.getAddressHash());
 
         addressJson.put("label", this.getLabel());
-        addressJson.put("confidence", this.getConfidence());
-        addressJson.put("chain_height", this.getChainHeight());
-        addressJson.put("paid_at", (this.getPaidAt() == null ? null : new java.text.SimpleDateFormat("Y-m-d k:M:S Z").format(this.getPaidAt())));
-        addressJson.put("paid", (this.getPaidAt() != null));
-        addressJson.put("transaction_hash", this.getTransactionHash());
+        addressJson.put("transactions", this.getTransactionHashes());
 
         return addressJson.toJSONString();
+    }
+
+    public Map<String, Integer> getTransactionHashes() {
+        Map<String, Integer> hashes = new HashMap<String, Integer>();
+        for (Payment payment : this.getPayments()) {
+            hashes.put(payment.getTransactionHash(), payment.getConfidence());
+        }
+        return hashes;
+    }
+
+    public List<Payment> getPayments() {
+        return Payment.findByAddressHash(this.getAddressHash());
     }
 
     public Integer getId() {
@@ -179,28 +172,12 @@ public class WatchingAddress {
         this.identifier = identifier;
     }
 
-    public String getTransactionHash() {
-        return transactionHash;
-    }
-
-    public void setTransactionHash(String transactionHash) {
-        this.transactionHash = transactionHash;
-    }
-
     public String getLabel() {
         return label;
     }
 
     public void setLabel(String label) {
         this.label = label;
-    }
-
-    public Integer getConfidence() {
-        return confidence;
-    }
-
-    public void setConfidence(Integer confidence) {
-        this.confidence = confidence;
     }
 
     public Timestamp getCreatedAt() {
@@ -211,28 +188,12 @@ public class WatchingAddress {
         this.createdAt = createdAt;
     }
 
-    public Timestamp getPaidAt() {
-        return paidAt;
-    }
-
-    public void setPaidAt(Timestamp paidAt) {
-        this.paidAt = paidAt;
-    }
-
     public String getAddressHash() {
         return addressHash;
     }
 
     public void setAddressHash(String addressHash) {
         this.addressHash = addressHash;
-    }
-
-    public Integer getChainHeight() {
-        return chainHeight;
-    }
-
-    public void setChainHeight(Integer chainHeight) {
-        this.chainHeight = chainHeight;
     }
 
     public Long getReceivedSatoshi() {

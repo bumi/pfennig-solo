@@ -44,9 +44,8 @@ public class Invoice {
 
     @NotNull
     @NotEmpty
-    Long satoshi;
-    @Column(name = "received_satoshi")
-    Long receivedSatoshi;
+    @Column(name = "satoshi_value")
+    Long satoshiValue;
 
     String currency;
     @Column(name = "notification_url")
@@ -64,12 +63,9 @@ public class Invoice {
     Timestamp createdAt;
     @Column(name = "paid_at")
     Timestamp paidAt;
-    @Column(name = "transaction_hash")
-    String transactionHash;
+    
     String label;
-    Integer confidence;
-    Integer chainHeight;
-
+    
     @Column(name = "address_hash")
     String addressHash;
 
@@ -131,37 +127,18 @@ public class Invoice {
             return true;
         } else {
             logger.error("notification failed for invoice#" + this.getIdentifier());
+            logger.info("notification response: " + request.body());
             return false;
         }
-    }
-
-    public void markAsPaid(String txHash, Timestamp paidAt, Coin coin) {
-        this.setTransactionHash(txHash);
-        System.out.println(this.transactionHash);
-        this.setPaidAt(paidAt);
-        System.out.println(this.paidAt);
-        this.setReceivedSatoshi(coin.value);
-        if (this.save())
-            this.sendNotification();
-        else
-            this.logger.error("faild setting invoice as paid invoice #" + this.getIdentifier());
-
-    }
-
-    public void markAsConfirmed(Integer confidence, Integer height) {
-        this.setConfidence(confidence);
-        this.setChainHeight(height);
-        this.save();
-        this.sendNotification();
     }
 
     public void insertPrice(long price, String currency) {
         this.currency = currency;
         this.price = price;
         if (currency.equals("BTC")) {
-            this.setSatoshi(price);
+            this.setSatoshiValue(price);
         } else {
-            this.setSatoshi(PriceCalculator.forCurrency(this.currency).fiatToCoin(currency, price).getValue());
+            this.setSatoshiValue(PriceCalculator.forCurrency(this.currency).fiatToCoin(currency, price).getValue());
         }
     }
 
@@ -185,41 +162,121 @@ public class Invoice {
     public String toJson() {
         JSONObject invoiceJson = new JSONObject();
         invoiceJson.put("identifier", this.getIdentifier());
-        invoiceJson.put("address_hash", this.getAddressHash());
+        invoiceJson.put("addressHash", this.getAddressHash());
 
-        invoiceJson.put("satoshi", this.getSatoshi());
-        invoiceJson.put("price_in_btc", this.getBtcPrice());
+        invoiceJson.put("satoshi", this.getSatoshi().getValue());
+        invoiceJson.put("priceInBtc", this.getBtcPrice());
         invoiceJson.put("price", this.getPrice());
         invoiceJson.put("currency", this.getCurrency());
+        invoiceJson.put("receivedSatoshi", this.getReceivedSatoshi().getValue());
+        invoiceJson.put("satoshiMissing", this.getMissingSatoshi().getValue());
+        invoiceJson.put("btcMissing", this.getMissingSatoshi().toPlainString());
+
         invoiceJson.put("label", this.getLabel());
         invoiceJson.put("orderId", this.getOrderId());
-        invoiceJson.put("confidence", this.getConfidence());
-        invoiceJson.put("chain_height", this.getChainHeight());
-        invoiceJson.put("paid_at", (this.getPaidAt() == null ? null : new java.text.SimpleDateFormat("Y-m-d k:M:S Z").format(this.getPaidAt())));
-        invoiceJson.put("paid", (this.getPaidAt() != null));
-        invoiceJson.put("transaction_hash", this.getTransactionHash());
+        invoiceJson.put("confirmations", this.getConfidence());
+        invoiceJson.put("appearedAt", this.getAppearedAtChainHeight());
+
+        invoiceJson.put("transactions", this.getTransactionHashes());
+        invoiceJson.put("status", this.getStatus());
+        invoiceJson.put("paid", this.isPaid());
 
         return invoiceJson.toJSONString();
     }
 
-    public Map toMustache() {
-        Map vars = new HashMap();
-        vars.put("identifier", this.getIdentifier());
-        vars.put("satoshi", this.getSatoshi());
-        vars.put("price", this.getPrice());
-        vars.put("price_in_btc", this.getBtcPrice());
-        vars.put("currency", this.getCurrency());
-        vars.put("orderId", this.getOrderId());
-        vars.put("description", this.getDescription());
-        vars.put("address_hash", this.getAddressHash());
-        vars.put("label", "label");
-        return vars;
+    public List<Payment> getPayments() {
+        return Payment.findByAddressHash(this.getAddressHash());
     }
-
+    
     public String getBtcPrice() {
-        return Coin.valueOf(this.satoshi).toPlainString();
+        return this.getSatoshi().toPlainString();
     }
 
+    public Coin getReceivedSatoshi() {
+        Coin sum = Coin.valueOf(0);
+        List<Payment> payments = this.getPayments();
+        for (Payment payment : payments) {
+            sum = sum.add(payment.getValue());
+        }
+        return sum;
+    }
+
+    /**
+     * returns the difference of the amount paid and the received amount.
+     * 
+     * @return Coin
+     */
+    public Coin getMissingSatoshi() {
+        return this.getSatoshi().subtract(this.getReceivedSatoshi());
+    }
+
+    public Map<String, Integer> getTransactionHashes() {
+        Map<String,Integer> hashes = new HashMap<String, Integer>();
+        for (Payment payment : this.getPayments()) {
+            hashes.put(payment.getTransactionHash(), payment.getConfidence());
+        }
+        return hashes;
+    }
+
+    /**
+     * returns true if the invoice is paid or paidOver - if the customer pays too much we are still ok with that.
+     * 
+     * @return boolean
+     */
+    public boolean isPaid() {
+        return "paid".equals(this.getStatus()) || "paidOver".equals(this.getStatus());
+    }
+
+    /**
+     * returns the status of the invoice depending on the amount received:
+     * nothing: invoice is pending
+     * exactly the correct amount: paid
+     * too little: paidPartial
+     * too much: paidOver
+     * 
+     * @return String - status
+     */
+    public String getStatus() {
+        if (this.getReceivedSatoshi().isZero()) {
+            return "pending";
+        }
+        if (this.getReceivedSatoshi().getValue() == this.getSatoshi().getValue()) {
+            return "paid";
+        }
+        if (this.getReceivedSatoshi().getValue() > this.getSatoshi().getValue()) {
+            return "paidOver";
+        }
+        if (this.getReceivedSatoshi().getValue() < this.getSatoshi().getValue()) {
+            return "paidPartial";
+        }
+        return null;
+    }
+    
+    /**
+     * returns the block number of the last received payment. null if it is not yet in a block
+     * 
+     * @return Integer or null of not yet confirmed
+     */
+    public Integer getAppearedAtChainHeight() {
+        List<Payment> payments = this.getPayments();
+        if (payments.size() > 0) {
+            return payments.get(payments.size() - 1).getAppearedAtChainHeight();
+        }
+        return null;
+    }
+
+    /**
+     * returns the confirmations/confidence of the last received payment. null if it is not yet in a block
+     * 
+     * @return Integer or null
+     */
+    public Integer getConfidence() {
+        List<Payment> payments = this.getPayments();
+        if (payments.size() > 0) {
+            return payments.get(payments.size() - 1).getConfidence();
+        }
+        return null;
+    }
 
     public Long getPrice() {
         return price;
@@ -229,12 +286,16 @@ public class Invoice {
         this.price = new Long(price);
     }
 
-    public Long getSatoshi() {
-        return satoshi;
+    public Coin getSatoshi() {
+        return Coin.valueOf(this.getSatoshiValue());
     }
 
-    public void setSatoshi(Long satoshi) {
-        this.satoshi = satoshi;
+    public Long getSatoshiValue() {
+        return satoshiValue;
+    }
+
+    public void setSatoshiValue(Long satoshi) {
+        this.satoshiValue = satoshi;
     }
 
     public String getCurrency() {
@@ -313,44 +374,12 @@ public class Invoice {
         this.createdAt = createdAt;
     }
 
-    public String getTransactionHash() {
-        return transactionHash;
-    }
-
-    public void setTransactionHash(String transactionHash) {
-        this.transactionHash = transactionHash;
-    }
-
     public String getLabel() {
         return label;
     }
 
     public void setLabel(String label) {
         this.label = label;
-    }
-
-    public Integer getConfidence() {
-        return confidence;
-    }
-
-    public void setConfidence(Integer confidence) {
-        this.confidence = confidence;
-    }
-
-    public Long getReceivedSatoshi() {
-        return receivedSatoshi;
-    }
-
-    public void setReceivedSatoshi(Long receivedSatoshi) {
-        this.receivedSatoshi = receivedSatoshi;
-    }
-
-    public Integer getChainHeight() {
-        return chainHeight;
-    }
-
-    public void setChainHeight(Integer chainHeight) {
-        this.chainHeight = chainHeight;
     }
 
     public List<ConstraintViolation> getViolations() {

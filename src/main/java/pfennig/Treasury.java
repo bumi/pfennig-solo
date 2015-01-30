@@ -29,6 +29,7 @@ import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 
 public class Treasury {
+    public static Treasury instance; //TODO: how to singleton? 
     public String environment;
     private boolean useLocalhost;
     public NetworkParameters params;
@@ -116,6 +117,10 @@ public class Treasury {
         }
     }
 
+    public Integer getChainHeight() {
+        return this.blockChain.getBestChainHeight();
+    }
+
     private NetworkParameters paramsForEnvironment(String networkId) {
         if (networkId == null) {
             networkId = NetworkParameters.ID_TESTNET;
@@ -146,14 +151,20 @@ public class Treasury {
             logger.info("received transaction: " + tx.getHashAsString() + " value: " + tx.getValue(wallet));
 
             String addressHash = this.addressHashFor(tx, wallet);
-            new NotificationHandler(addressHash, tx, wallet).notifyPaid();
+            Payment.create(addressHash, tx, wallet);
 
-            Futures.addCallback(tx.getConfidence().getDepthFuture(3), new FutureCallback<Transaction>() {
+            Futures.addCallback(tx.getConfidence().getDepthFuture(2), new FutureCallback<Transaction>() {
                 @Override
                 public void onSuccess(Transaction result) {
                     // "result" here is the same as "tx" above, but we use it anyway for clarity.
                     String addressHash = WalletListener.this.addressHashFor(result, wallet);
-                    new NotificationHandler(addressHash, result, wallet).notifyConfirmed();
+
+                    Payment payment = Payment.findByTransactionHash(tx.getHashAsString());
+                    if (payment != null) {
+                        payment.markAsConfirmed(addressHash, result, wallet);
+                    } else {
+                        logger.info("missing payment for transaction=" + tx.getHashAsString() + " address=" + addressHash);
+                    }
                 }
 
                 @Override
