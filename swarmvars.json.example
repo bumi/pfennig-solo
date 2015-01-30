@@ -2,6 +2,7 @@
   "bumi/dev": {
     "pgpassword": "your passwd here",
     "watching_key" : "wallet watching key",
-    "bitcoin_network": "org.bitcoin.test"
+    "bitcoin_network": "org.bitcoin.test", 
+    "domain": "pfennig.internal.example.com"
   }
 }
