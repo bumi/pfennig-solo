@@ -1,7 +1,9 @@
 package pfennig;
 
 import java.sql.Timestamp;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -36,9 +38,10 @@ public class Payment {
 
     @NotNull
     @NotEmpty
-    @Column(name = "received_satoshi")
-    Long receivedSatoshi;
+    @Column(name = "received_satoshi_value")
+    Long receivedSatoshiValue;
 
+    // TODO: validate uniqueness
     @Column(name = "transaction_hash")
     String transactionHash;
 
@@ -51,6 +54,7 @@ public class Payment {
     @Column(name = "created_at")
     Timestamp createdAt;
 
+    // once we have received the payment
     @Column(name = "paid_at")
     Timestamp paidAt;
 
@@ -65,13 +69,21 @@ public class Payment {
     }
 
     public static Payment create(String address_hash, Transaction tx, Wallet wallet) {
-        Payment payment = new Payment();
+        Payment payment;
+
+        // check if we already have a payment
+        payment = Payment.findByTransactionHash(tx.getHashAsString());
+        if (payment != null) {
+            return payment;
+        }
+
+        payment = new Payment();
         payment.setAddressHash(address_hash);
         if (tx.getConfidence().getConfidenceType() == ConfidenceType.BUILDING) {
             payment.setAppearedAtChainHeight(tx.getConfidence().getAppearedAtChainHeight());
         }
         payment.setTransactionHash(tx.getHashAsString());
-        payment.setReceivedSatoshi(tx.getValue(wallet).getValue());
+        payment.setReceivedSatoshiValue(tx.getValue(wallet).getValue());
         payment.setPaidAt(new Timestamp(new java.util.Date().getTime()));
         payment.save();
         payment.notifyPaid();
@@ -130,9 +142,6 @@ public class Payment {
         return this.violations.size() == 0;
     }
 
-    public Coin getValue() {
-        return Coin.valueOf(this.getReceivedSatoshi());
-    }
     public Invoice getInvoice() {
         return Invoice.findByAddressHash(this.getAddressHash());
     }
@@ -148,6 +157,24 @@ public class Payment {
         }
         return 0;
     }
+
+    public Map<String, Object> getAttributes() {
+        Map<String, Object> attributes = new HashMap<String, Object>();
+        attributes.put("receivedSatoshi", this.getReceivedSatoshi().getValue());
+        attributes.put("transactionHash", this.getTransactionHash());
+        attributes.put("addressHash", this.getAddressHash());
+        attributes.put("paidAt", (this.getPaidAt() == null ? null : new java.text.SimpleDateFormat("Y-m-d k:M:S Z").format(this.getPaidAt())));
+        attributes.put("confirmedAt", (this.getConfirmedAt() == null ? null : new java.text.SimpleDateFormat("Y-m-d k:M:S Z").format(this.getConfirmedAt())));
+        attributes.put("confirmations", this.getConfidence());
+        attributes.put("appearsAt", this.getAppearedAtChainHeight());
+
+        return attributes;
+    }
+
+    public Coin getReceivedSatoshi() {
+        return Coin.valueOf(this.getReceivedSatoshiValue());
+    }
+
     public Integer getId() {
         return id;
     }
@@ -156,12 +183,12 @@ public class Payment {
         this.id = id;
     }
 
-    public Long getReceivedSatoshi() {
-        return receivedSatoshi;
+    public Long getReceivedSatoshiValue() {
+        return receivedSatoshiValue;
     }
 
-    public void setReceivedSatoshi(Long receivedSatoshi) {
-        this.receivedSatoshi = receivedSatoshi;
+    public void setReceivedSatoshiValue(Long receivedSatoshiValue) {
+        this.receivedSatoshiValue = receivedSatoshiValue;
     }
 
     public String getTransactionHash() {

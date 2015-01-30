@@ -7,9 +7,12 @@ import static spark.SparkBase.setPort;
 
 import java.io.File;
 import java.net.URI;
+import java.util.LinkedList;
+import java.util.List;
 
 import org.bitcoinj.utils.Fiat;
 import org.json.simple.JSONObject;
+import org.json.simple.JSONValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -117,6 +120,23 @@ public class App {
             }
         });
         
+        get("/api/invoices/:identifier/payments", (req, res) -> {
+            Invoice invoice = Invoice.findByIdentifier(req.params("identifier"));
+
+            res.type("application/json");
+            if (invoice == null) {
+                res.status(404);
+                return "[]";
+            } else {
+                List<Payment> payments = invoice.getPayments();
+                LinkedList paymentsJSON = new LinkedList();
+                for (Payment payment : payments) {
+                    paymentsJSON.add(payment.getAttributes());
+                }
+                return JSONValue.toJSONString(paymentsJSON);
+            }
+        });
+
         post("/api/addresses", (req, res) -> {
             WatchingAddress address = WatchingAddress.fromQueryMap(req.queryMap().get("address"));
             res.type("application/json");

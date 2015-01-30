@@ -196,7 +196,7 @@ public class Invoice {
         Coin sum = Coin.valueOf(0);
         List<Payment> payments = this.getPayments();
         for (Payment payment : payments) {
-            sum = sum.add(payment.getValue());
+            sum = sum.add(payment.getReceivedSatoshi());
         }
         return sum;
     }

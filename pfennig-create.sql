@@ -16,7 +16,7 @@ create table invoices (
 
 create table payments (
   id                        integer not null,
-  received_satoshi          bigint,
+  received_satoshi_value    bigint,
   transaction_hash          varchar(255),
   appeared_at_chain_height  integer,
   address_hash              varchar(255),
