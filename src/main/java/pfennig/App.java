@@ -120,6 +120,18 @@ public class App {
             }
         });
         
+        get("api/invoices/by_order_id", (req, res) -> {
+            String orderId = req.queryParams("order_id");
+            Invoice invoice = Invoice.findByOrderId(orderId);
+            res.type("application/json");
+            if (invoice == null) {
+                res.status(404);
+                return "{}";
+            } else {
+                return invoice.toJson();
+            }
+        });
+
         get("/api/invoices/:identifier/payments", (req, res) -> {
             Invoice invoice = Invoice.findByIdentifier(req.params("identifier"));
 
