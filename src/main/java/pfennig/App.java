@@ -89,7 +89,7 @@ public class App {
         });
 
         get("/", (req, res) -> {
-            return "ping BestChainHeight=" + treasury.getChainHeight() + " time=" + new java.util.Date().getTime();
+            return "ping environment=" + treasury.environment + " BestChainHeight=" + treasury.getChainHeight() + " time=" + new java.util.Date().getTime();
         });
 
         post("/api/invoices", (req, res) -> {
