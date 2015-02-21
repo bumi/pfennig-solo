@@ -91,12 +91,18 @@ public class Payment {
         return payment;
     }
 
-    public static Payment findByTransactionHash(String transactionHash) {
-        List<Payment> payments = Ebean.find(Payment.class).where().eq("transaction_hash", transactionHash.trim()).setMaxRows(1).findList();
-        if (payments.isEmpty()) {
+    public static Payment findBy(String attribute, String value) {
+        if (value == null) {
             return null;
         }
+        List<Payment> payments = Ebean.find(Payment.class).where().eq(attribute, value.trim()).setMaxRows(1).findList();
+        if (payments.isEmpty())
+            return null;
         return payments.get(0);
+    }
+
+    public static Payment findByTransactionHash(String transactionHash) {
+        return Payment.findBy("transaction_hash", transactionHash);
     }
 
     public void markAsConfirmed(String addressHash, Transaction tx, Wallet wallet) {

@@ -90,7 +90,7 @@ public class Treasury {
         this.peerGroup.startAsync();
         this.peerGroup.awaitRunning();
         this.peerGroup.startBlockChainDownload(bListener);
-        //bListener.await();
+        bListener.await();
     }
 
     public void loadWalletFromWatchingKey(String watchingKey, File walletFile, long keyBirthday) throws IOException {

@@ -74,20 +74,22 @@ public class Invoice {
 
 
     public static Invoice findByAddressHash(String addressHash) {
-        if (addressHash == null) {
-            return null;
-        }
-        List<Invoice> invoices = Ebean.find(Invoice.class).where().eq("address_hash", addressHash.trim()).setMaxRows(1).findList();
-        if (invoices.isEmpty())
-            return null;
-        return invoices.get(0);
+        return Invoice.findBy("address_hash", addressHash);
     }
 
     public static Invoice findByIdentifier(String identifier) {
-        if (identifier == null) {
+        return Invoice.findBy("identifier", identifier);
+    }
+
+    public static Invoice findByOrderId(String orderId) {
+        return Invoice.findBy("order_id", orderId);
+    }
+
+    public static Invoice findBy(String attribute, String value) {
+        if (value == null) {
             return null;
         }
-        List<Invoice> invoices = Ebean.find(Invoice.class).where().eq("identifier", identifier.trim()).setMaxRows(1).findList();
+        List<Invoice> invoices = Ebean.find(Invoice.class).where().eq(attribute, value.trim()).setMaxRows(1).findList();
         if (invoices.isEmpty())
             return null;
         return invoices.get(0);
@@ -173,6 +175,7 @@ public class Invoice {
         invoiceJson.put("btcMissing", this.getMissingSatoshi().toPlainString());
 
         invoiceJson.put("label", this.getLabel());
+        invoiceJson.put("description", this.getDescription());
         invoiceJson.put("orderId", this.getOrderId());
         invoiceJson.put("confirmations", this.getConfidence());
         invoiceJson.put("appearedAt", this.getAppearedAtChainHeight());
