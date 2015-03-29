@@ -6,6 +6,22 @@ cd /pfennig
 
 echo "booting up"
 
+
+if [ -n "$POSTGRES_PASS" ]; then
+  export DATABASE_PORT_5432_PASSWORD=$POSTGRES_PASS
+  export PG_PASSWORD=$POSTGRES_PASS
+fi
+if [ -n "$POSTGRES_USER" ]; then
+  export DATABASE_PORT_5432_USER=$POSTGRES_USER
+fi
+
+# defaulting to postgres as database user
+if [ -n "$DATABASE_PORT_5432_USER" ]; then
+	export DATABASE_PORT_5432_USER=postgres
+fi
+
+env
+
 if [ -n "$DATABASE_PORT_5432_TCP_ADDR" ]; then
   echo "DATABASE_PORT_5432_TCP_ADDR is set"
   echo "assuming linking with env variables"
@@ -13,7 +29,11 @@ if [ -n "$DATABASE_PORT_5432_TCP_ADDR" ]; then
   echo "$DATABASE_PORT_5432_TCP_ADDR:$DATABASE_PORT_5432_TCP_PORT:pfennig:$DATABASE_PORT_5432_USER:$DATABASE_PORT_5432_PASSWORD" > "$HOME/.pgpass"
   chmod 0600 "$HOME/.pgpass"
 
+  cat "$HOME/.pgpass"
+
   PSQL="psql -h $DATABASE_PORT_5432_TCP_ADDR -p $DATABASE_PORT_5432_TCP_PORT -U $DATABASE_PORT_5432_USER"
+
+  echo $PSQL
 
   export DATABASE_URL="postgresql://$DATABASE_PORT_5432_USER:$DATABASE_PORT_5432_PASSWORD@$DATABASE_PORT_5432_TCP_ADDR:$DATABASE_PORT_5432_TCP_PORT/pfennig"
 
