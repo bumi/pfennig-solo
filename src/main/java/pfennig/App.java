@@ -121,7 +121,7 @@ public class App {
         });
         
         get("api/invoices/by_order_id", (req, res) -> {
-            String orderId = req.queryParams("order_id");
+            String orderId = req.queryParams("orderId");
             Invoice invoice = Invoice.findByOrderId(orderId);
             res.type("application/json");
             if (invoice == null) {

@@ -100,7 +100,7 @@ public class Invoice {
         logger.debug("new invoice with:" + 
                 " notification_url=" + params.get("notification_url").value() + 
                 " description=" + params.get("description").value() +
-                " order_id=" + params.get("order_id").value() +
+ " orderId=" + params.get("orderId").value() +
                 " currency=" + params.get("currency").value() +
  " price=" + params.get("price").value());
         
@@ -111,7 +111,7 @@ public class Invoice {
         
         invoice.setNotificationUrl(params.get("notification_url").value());
         invoice.setDescription(params.get("description").value());
-        invoice.setOrderId(params.get("order_id").value());
+        invoice.setOrderId(params.get("orderId").value());
         invoice.setLabel(params.get("label").value());
         return invoice;
     }
