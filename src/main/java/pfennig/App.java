@@ -16,6 +16,8 @@ import org.json.simple.JSONValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import spark.QueryParamsMap;
+
 import com.avaje.ebean.EbeanServer;
 import com.avaje.ebean.EbeanServerFactory;
 import com.avaje.ebean.config.DataSourceConfig;
@@ -93,7 +95,12 @@ public class App {
         });
 
         post("/api/invoices", (req, res) -> {
-            Invoice invoice = Invoice.fromQueryMap(req.queryMap().get("invoice"));
+            QueryParamsMap invoiceParams = req.queryMap().get("invoice");
+            if (!invoiceParams.hasKeys()) {
+                res.status(422);
+                return "";
+            }
+            Invoice invoice = Invoice.fromQueryMap(invoiceParams);
 
             invoice.setAddressHash(treasury.freshReceiveAddress());
 
@@ -150,7 +157,13 @@ public class App {
         });
 
         post("/api/addresses", (req, res) -> {
-            WatchingAddress address = WatchingAddress.fromQueryMap(req.queryMap().get("address"));
+            QueryParamsMap addressParams = req.queryMap().get("address");
+            if (!addressParams.hasKeys()) {
+                res.status(422);
+                return "";
+            }
+
+            WatchingAddress address = WatchingAddress.fromQueryMap(addressParams);
             res.type("application/json");
             if (address.save() && treasury.addWatchedAddress(address.getAddressHash())) {
                 return address.toJson();
