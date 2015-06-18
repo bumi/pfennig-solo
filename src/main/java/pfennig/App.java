@@ -77,7 +77,7 @@ public class App {
         }
 
         final Treasury treasury = new Treasury(environment, new File(rootDir), useLocalhost);
-        treasury.loadWalletFromWatchingKey(watchingKey, new File(walletPath), keyBirthday);
+        treasury.loadWalletFromFileOrWatchingKey(watchingKey, new File(walletPath), keyBirthday);
         treasury.start();
         Treasury.instance = treasury;
 

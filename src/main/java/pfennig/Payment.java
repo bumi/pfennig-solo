@@ -130,6 +130,8 @@ public class Payment {
             invoice.sendNotification();
         } else if (watchingAddress != null) {
             watchingAddress.sendNotification();
+        } else {
+            logger.info("not invoice or watchingAddress found for: " + this.getAddressHash());
         }
     }
 

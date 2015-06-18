@@ -93,17 +93,37 @@ public class Treasury {
         bListener.await();
     }
 
+    public void loadWalletFromFileOrWatchingKey(String watchingKey, File walletFile, long keyBirthday) throws Exception {
+        if (walletFile.exists()) {
+            loadWalletFromFile(walletFile);
+        } else {
+            loadWalletFromWatchingKey(watchingKey, walletFile, keyBirthday);
+        }
+    }
+
+    public void loadWalletFromFile(File walletFile) throws Exception {
+        logger.info("found an existing wallet");
+        this.wallet = Wallet.loadFromFile(walletFile);
+        this.walletFile = walletFile;
+        this.registerWallet();
+    }
+
     public void loadWalletFromWatchingKey(String watchingKey, File walletFile, long keyBirthday) throws IOException {
+        logger.warn("initiating wallet from watching key");
         DeterministicKey key = DeterministicKey.deserializeB58(null, watchingKey);
         this.wallet = Wallet.fromWatchingKey(this.params, key, keyBirthday);
         this.walletFile = walletFile;
+        this.registerWallet();
+    }
+    
+    private void registerWallet() throws IOException {
         this.wallet.saveToFile(this.walletFile);
         this.wallet.autosaveToFile(this.walletFile, 300, TimeUnit.MILLISECONDS, null);
         this.wallet.addEventListener(new Treasury.WalletListener(this.params));
         this.blockChain.addWallet(this.wallet);
         this.peerGroup.addWallet(this.wallet);
     }
-
+    
     public String freshReceiveAddress() {
         return this.wallet.freshReceiveAddress().toString();
     }

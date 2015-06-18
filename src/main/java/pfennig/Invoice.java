@@ -48,6 +48,7 @@ public class Invoice {
     Long satoshiValue;
 
     String currency;
+
     @Column(name = "notification_url")
     String notificationUrl;
     @Column(name = "order_id")
@@ -98,7 +99,7 @@ public class Invoice {
     public static Invoice fromQueryMap(QueryParamsMap params) {
         Invoice invoice = new Invoice();
         logger.debug("new invoice with:" + 
-                " notification_url=" + params.get("notification_url").value() + 
+ " notificationUrl=" + params.get("notificationUrl").value() +
                 " description=" + params.get("description").value() +
  " orderId=" + params.get("orderId").value() +
                 " currency=" + params.get("currency").value() +
@@ -109,7 +110,7 @@ public class Invoice {
         } catch (NumberFormatException e) {
         }
         
-        invoice.setNotificationUrl(params.get("notification_url").value());
+        invoice.setNotificationUrl(params.get("notificationUrl").value());
         invoice.setDescription(params.get("description").value());
         invoice.setOrderId(params.get("orderId").value());
         invoice.setLabel(params.get("label").value());
@@ -117,18 +118,21 @@ public class Invoice {
     }
 
     public boolean sendNotification() {
-        if (this.notificationUrl == null || this.notificationUrl.trim().isEmpty())
+        if (this.getNotificationUrl() == null || this.getNotificationUrl().trim().isEmpty()) {
+            logger.info("no notificationUrl for invoice: " + this.getIdentifier());
             return true;
-        logger.info("sending notification to: " + this.notificationUrl);
-        HttpRequest request = HttpRequest.post(this.notificationUrl);
+        }
+
+        logger.info("sending notification for invoice " + this.getIdentifier() + " to: " + this.getNotificationUrl());
+        HttpRequest request = HttpRequest.post(this.getNotificationUrl());
         request.header("Content-Type", "application/json");
         request.send(this.toJson());
 
         if (request.ok()) {
-            logger.info("notification successful for invoice#" + this.getIdentifier());
+            logger.info("notification successful for invoice " + this.getIdentifier());
             return true;
         } else {
-            logger.error("notification failed for invoice#" + this.getIdentifier());
+            logger.error("notification failed for invoice " + this.getIdentifier());
             logger.info("notification response: " + request.body());
             return false;
         }
