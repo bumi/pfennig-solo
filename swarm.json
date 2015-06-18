@@ -50,7 +50,8 @@
                         }
                     ],
                     "domains": {
-                        "$domain": "4567"
+                        "$domain": "4567",
+                        "pfennig.nomadiclabs.net": "4567"
                     }
                 }
             ]
