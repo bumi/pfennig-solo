@@ -62,4 +62,4 @@ fi
 
 echo $DATABASE_URL
 echo "running pfennig"
-java -jar target/pfennig-jar-with-dependencies.jar
+java -DapplicationId=$APPLICATION_ID -jar target/pfennig-jar-with-dependencies.jar
