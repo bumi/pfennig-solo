@@ -25,7 +25,6 @@ import spark.QueryParamsMap;
 
 import com.avaje.ebean.Ebean;
 import com.avaje.ebean.EbeanServer;
-import com.github.kevinsawicki.http.HttpRequest;
 
 @Entity
 @Table(name = "watching_addresses")
@@ -89,22 +88,20 @@ public class WatchingAddress {
     }
 
     public boolean sendNotification() {
-        if (this.notificationUrl == null || this.notificationUrl.trim().isEmpty())
+        if (this.getNotificationUrl() == null || this.getNotificationUrl().trim().isEmpty()) {
+            logger.info("no notificationUrl for address: " + this.getIdentifier());
             return true;
+        }
 
-        logger.info("sending notification to: " + this.notificationUrl);
-        HttpRequest request = HttpRequest.post(this.notificationUrl);
-        request.header("Content-Type", "application/json");
-        request.send(this.toJson());
-
-        if (request.ok()) {
-            logger.info("notification successful for watching address " + this.getIdentifier());
+        logger.info("sending notification for address " + this.getIdentifier() + " to: " + this.getNotificationUrl());
+        if (Utils.sendNotification(this.getNotificationUrl(), this.toJson())) {
+            logger.info("notification successful for address " + this.getIdentifier());
             return true;
         } else {
-            logger.info("notification failed for watching address " + this.getIdentifier());
-            logger.info("notification response: " + request.body());
-            return false;
+            logger.error("notification failed for address " + this.getIdentifier());
+            return true;
         }
+
     }
 
     public boolean save() {

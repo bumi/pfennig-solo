@@ -27,7 +27,7 @@ import spark.QueryParamsMap;
 import com.avaje.ebean.Ebean;
 import com.avaje.ebean.EbeanServer;
 import com.avaje.ebean.annotation.CreatedTimestamp;
-import com.github.kevinsawicki.http.HttpRequest;
+
 
 @Entity
 @Table(name = "invoices")
@@ -124,18 +124,14 @@ public class Invoice {
         }
 
         logger.info("sending notification for invoice " + this.getIdentifier() + " to: " + this.getNotificationUrl());
-        HttpRequest request = HttpRequest.post(this.getNotificationUrl());
-        request.header("Content-Type", "application/json");
-        request.send(this.toJson());
-
-        if (request.ok()) {
+        if (Utils.sendNotification(this.getNotificationUrl(), this.toJson())) {
             logger.info("notification successful for invoice " + this.getIdentifier());
             return true;
         } else {
             logger.error("notification failed for invoice " + this.getIdentifier());
-            logger.info("notification response: " + request.body());
-            return false;
+            return true;
         }
+
     }
 
     public void insertPrice(long price, String currency) {
