@@ -87,11 +87,16 @@ public class App {
         }
 
         before("/*", (request, response) -> {
-            logger.info(request.requestMethod() + " " + request.pathInfo() + " ip=" + request.ip());
+            logger.info(request.requestMethod() + " " + request.pathInfo() + " ip=" + request.ip() + " real ip: " + request.headers("X-Real-IP"));
         });
 
         get("/", (req, res) -> {
-            return "ping environment=" + treasury.environment + " BestChainHeight=" + treasury.getChainHeight() + " time=" + new java.util.Date().getTime();
+            res.type("application/json");
+
+            int chainDiff = Math.abs(treasury.getChainHeight() - Utils.chainHeightFromBlockChainInfo());
+            String inSync = (chainDiff < 2) ? "true" : "false";
+
+            return "{\"environment\": \"" + treasury.environment + "\", \"BestChainHeight\": \"" + treasury.getChainHeight() + "\", \"ChainHead\": \"" + treasury.getChainHeadHashAsString() + "\", \"heightDiff\": " + chainDiff + ", \"inSync\": " + inSync + ", \"time\": " + new java.util.Date().getTime() + "}";
         });
 
         post("/api/invoices", (req, res) -> {
@@ -106,12 +111,14 @@ public class App {
 
             res.type("application/json");
             if (invoice.save()) {
+                logger.info("invoice created: " + invoice.getIdentifier());
                 return invoice.toJson();
             } else {
-                logger.info("failed to save invoice");
+                logger.info("failed to save invoice: " + invoice.getViolations().toString());
                 res.status(422);
                 JSONObject error = new JSONObject();
                 error.put("error", "invalid input. please check our params");
+                error.put("fields", invoice.violations.toString());
                 return error.toJSONString();
             }
         });

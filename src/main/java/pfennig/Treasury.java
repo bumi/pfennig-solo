@@ -141,6 +141,10 @@ public class Treasury {
         return this.blockChain.getBestChainHeight();
     }
 
+    public String getChainHeadHashAsString() {
+        return this.blockChain.getChainHead().getHeader().getHashAsString();
+    }
+
     private NetworkParameters paramsForEnvironment(String networkId) {
         if (networkId == null) {
             networkId = NetworkParameters.ID_TESTNET;
