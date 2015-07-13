@@ -62,7 +62,7 @@ public class Utils {
         int chainHeight;
         try {
             String blockChainInfoResponse = HttpRequest.get("https://blockchain.info/latestblock").body();
-            logger.info("blockchain.info latest block: " + blockChainInfoResponse);
+            logger.debug("blockchain.info latest block: " + blockChainInfoResponse);
             Map blockInfo = (Map) new JSONParser().parse(blockChainInfoResponse);
             Object height = blockInfo.get("height");
             chainHeight = ((Long) height).intValue();
