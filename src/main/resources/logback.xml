@@ -33,7 +33,7 @@
   <logger name="org.bitcoinj.core.MemoryPool" level="WARN" />
    
   <root level="info">
-    <appender-ref ref="STDOUT" ></appender-ref>
     <appender-ref ref="FILE"></appender-ref>
+    <appender-ref ref="PAPERTRAIL"></appender-ref>
   </root>
 </configuration>

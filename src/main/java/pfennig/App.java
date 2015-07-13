@@ -81,6 +81,8 @@ public class App {
         treasury.start();
         Treasury.instance = treasury;
 
+        Utils.HMAC_KEY = System.getenv("API_KEY");
+
         String port = System.getenv("PORT");
         if (port != null) {
             setPort(Integer.parseInt(port));

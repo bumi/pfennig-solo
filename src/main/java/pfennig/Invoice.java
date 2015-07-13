@@ -98,7 +98,7 @@ public class Invoice {
 
     public static Invoice fromQueryMap(QueryParamsMap params) {
         Invoice invoice = new Invoice();
-        logger.debug("new invoice with:" + 
+        logger.info("new invoice with:" +
  " notificationUrl=" + params.get("notificationUrl").value() +
                 " description=" + params.get("description").value() +
  " orderId=" + params.get("orderId").value() +
@@ -124,7 +124,7 @@ public class Invoice {
         }
 
         logger.info("sending notification for invoice " + this.getIdentifier() + " to: " + this.getNotificationUrl());
-        if (Utils.sendNotification(this.getNotificationUrl(), this.toJson())) {
+        if (Utils.sendNotification(this.getNotificationUrl().trim(), this.toJson())) {
             logger.info("notification successful for invoice " + this.getIdentifier());
             return true;
         } else {
@@ -289,6 +289,10 @@ public class Invoice {
         this.price = new Long(price);
     }
 
+    public void setPrice(Long price) {
+        this.price = price;
+    }
+
     public Coin getSatoshi() {
         return Coin.valueOf(this.getSatoshiValue());
     }
@@ -367,10 +371,6 @@ public class Invoice {
 
     public void setIdentifier(String identifier) {
         this.identifier = identifier;
-    }
-
-    public void setPrice(Long price) {
-        this.price = price;
     }
 
     public void setCreatedAt(Timestamp createdAt) {
