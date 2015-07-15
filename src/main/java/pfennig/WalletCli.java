@@ -71,7 +71,6 @@ public class WalletCli {
             peerGroup.addWallet(wallet);
 
             peerGroup.startAsync();
-            peerGroup.awaitRunning();
             peerGroup.downloadBlockChain();
         }
 
@@ -89,14 +88,13 @@ public class WalletCli {
 
         DeterministicKey watchingKey = wallet.getWatchingKey();
 
-        System.out.println("Watching key data: " + watchingKey.serializePubB58());
+        System.out.println("Watching key data: " + watchingKey.serializePubB58(params));
         System.out.println("Watching key birthday: " + watchingKey.getCreationTimeSeconds());
         System.out.println("Receive address: " + wallet.currentReceiveAddress().toString());
         System.out.println("--------------------------------------------------------------------------------------");
         if (downloadBlockchain) {
             wallet.saveToFile(walletFile);
             peerGroup.stopAsync();
-            peerGroup.awaitTerminated();
         }
 
         System.out.println("DONE...");

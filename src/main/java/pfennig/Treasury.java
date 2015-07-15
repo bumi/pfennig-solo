@@ -11,11 +11,12 @@ import org.bitcoinj.core.Address;
 import org.bitcoinj.core.AddressFormatException;
 import org.bitcoinj.core.BlockChain;
 import org.bitcoinj.core.Coin;
-import org.bitcoinj.core.DownloadListener;
+import org.bitcoinj.core.DownloadProgressTracker;
 import org.bitcoinj.core.NetworkParameters;
 import org.bitcoinj.core.PeerAddress;
 import org.bitcoinj.core.PeerGroup;
 import org.bitcoinj.core.Transaction;
+import org.bitcoinj.core.TransactionConfidence;
 import org.bitcoinj.core.TransactionOutput;
 import org.bitcoinj.core.Wallet;
 import org.bitcoinj.crypto.DeterministicKey;
@@ -70,7 +71,7 @@ public class Treasury {
             this.peerGroup.addPeerDiscovery(new DnsDiscovery(this.params));
         }
 
-        DownloadListener bListener = new DownloadListener() {
+        DownloadProgressTracker bListener = new DownloadProgressTracker() {
             @Override
             public void doneDownload() {
                 logger.info("blockchain downloaded");
@@ -110,7 +111,7 @@ public class Treasury {
 
     public void loadWalletFromWatchingKey(String watchingKey, File walletFile, long keyBirthday) throws IOException {
         logger.warn("initiating wallet from watching key");
-        DeterministicKey key = DeterministicKey.deserializeB58(null, watchingKey);
+        DeterministicKey key = DeterministicKey.deserializeB58(watchingKey, this.params);
         this.wallet = Wallet.fromWatchingKey(this.params, key, keyBirthday);
         this.walletFile = walletFile;
         this.registerWallet();
@@ -177,9 +178,10 @@ public class Treasury {
             String addressHash = this.addressHashFor(tx, wallet);
             Payment.create(addressHash, tx, wallet);
 
-            Futures.addCallback(tx.getConfidence().getDepthFuture(2), new FutureCallback<Transaction>() {
+            Futures.addCallback(tx.getConfidence().getDepthFuture(2), new FutureCallback<TransactionConfidence>() {
                 @Override
-                public void onSuccess(Transaction result) {
+                public void onSuccess(TransactionConfidence confidence) {
+                    Transaction result = wallet.getTransaction(confidence.getTransactionHash());
                     // "result" here is the same as "tx" above, but we use it anyway for clarity.
                     String addressHash = WalletListener.this.addressHashFor(result, wallet);
 
